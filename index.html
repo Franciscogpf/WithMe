@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renascer - Rastreador de Sobriedade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="module">
+    import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+    import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
+
+    const Heart = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+    );
+
+    const Trophy = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+      </svg>
+    );
+
+    const Calendar = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    );
+
+    const Sparkles = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0L14.59 8.41L23 11L14.59 13.59L12 22L9.41 13.59L1 11L9.41 8.41L12 0Z"/>
+        <path d="M19 8L20.18 11.82L24 13L20.18 14.18L19 18L17.82 14.18L14 13L17.82 11.82L19 8Z"/>
+        <path d="M5 16L6.18 19.82L10 21L6.18 22.18L5 26L3.82 22.18L0 21L3.82 19.82L5 16Z"/>
+      </svg>
+    );
+
+    const Settings = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v6m0 6v6m8.66-15.66l-4.24 4.24m-4.24 4.24l-4.24 4.24M23 12h-6m-6 0H1m20.66 8.66l-4.24-4.24m-4.24-4.24l-4.24-4.24"/>
+      </svg>
+    );
+
+    const X = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    );
+
+    const Gift = ({ className }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="20 12 20 22 4 22 4 12"/>
+        <rect x="2" y="7" width="20" height="5"/>
+        <line x1="12" y1="22" x2="12" y2="7"/>
+        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+      </svg>
+    );
+
+    const SobrietyTracker = () => {
+      const [streak, setStreak] = useState(0);
+      const [checkedDays, setCheckedDays] = useState([]);
+      const [showReward, setShowReward] = useState(false);
+      const [totalDays, setTotalDays] = useState(0);
+      const [loading, setLoading] = useState(true);
+      const [showSettings, setShowSettings] = useState(false);
+      const [tickets, setTickets] = useState(1);
+      const [usedTickets, setUsedTickets] = useState([]);
+      const [lastRewardWeek, setLastRewardWeek] = useState(null);
+      const [showTicketMessage, setShowTicketMessage] = useState(false);
+      const [ticketQuote, setTicketQuote] = useState('');
+      const [showGiftOption, setShowGiftOption] = useState(false);
+      const [pendingGifts, setPendingGifts] = useState(0);
+
+      useEffect(() => {
+        loadData();
+      }, []);
+
+      useEffect(() => {
+        if (!loading && streak === 6 && lastRewardWeek !== getCurrentWeek()) {
+          addTicket();
+        }
+      }, [streak, loading]);
+
+      const getCurrentWeek = () => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 1);
+        const diff = now - start;
+        const oneWeek = 1000 * 60 * 60 * 24 * 7;
+        return Math.floor(diff / oneWeek);
+      };
+
+      const motivationalQuotes = [
+        "Você é mais forte do que pensa! 💪🐻",
+        "Cada escolha saudável é uma vitória! 🌟",
+        "Orgulhoso de você por cuidar de si mesma! 💜",
+        "Seu bem-estar importa muito! 🌸",
+        "Aproveite com moderação e amor próprio! 🎉",
+        "Você merece esse momento especial! ✨",
+        "Equilíbrio é a chave da felicidade! 🌈",
+        "Celebre a vida com consciência! 🥂"
+      ];
+
+      const loadData = async () => {
+        try {
+          const [streakData, daysData, totalData, ticketsData, usedTicketsData, lastRewardData, giftsData] = await Promise.all([
+            window.storage.get('sobriety-streak', true).catch(() => null),
+            window.storage.get('sobriety-days', true).catch(() => null),
+            window.storage.get('sobriety-total', true).catch(() => null),
+            window.storage.get('sobriety-tickets', true).catch(() => null),
+            window.storage.get('sobriety-used-tickets', true).catch(() => null),
+            window.storage.get('sobriety-last-reward', true).catch(() => null),
+            window.storage.get('sobriety-pending-gifts', true).catch(() => null)
+          ]);
+          
+          setStreak(streakData?.value ? parseInt(streakData.value) : 0);
+          setCheckedDays(daysData?.value ? JSON.parse(daysData.value) : []);
+          setTotalDays(totalData?.value ? parseInt(totalData.value) : 0);
+          setTickets(ticketsData?.value ? parseInt(ticketsData.value) : 1);
+          setUsedTickets(usedTicketsData?.value ? JSON.parse(usedTicketsData.value) : []);
+          setLastRewardWeek(lastRewardData?.value ? parseInt(lastRewardData.value) : null);
+          setPendingGifts(giftsData?.value ? parseInt(giftsData.value) : 0);
+        } catch (error) {
+          console.log('Starting fresh:', error);
+          setStreak(0);
+          setCheckedDays([]);
+          setTotalDays(0);
+          setTickets(1);
+          setUsedTickets([]);
+          setLastRewardWeek(null);
+          setPendingGifts(0);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const saveData = async (newStreak, newDays, newTotal, newTickets = tickets, newUsedTickets = usedTickets, newLastReward = lastRewardWeek, newGifts = pendingGifts) => {
+        try {
+          await window.storage.set('sobriety-streak', newStreak.toString(), true);
+          await window.storage.set('sobriety-days', JSON.stringify(newDays), true);
+          await window.storage.set('sobriety-total', newTotal.toString(), true);
+          await window.storage.set('sobriety-tickets', newTickets.toString(), true);
+          await window.storage.set('sobriety-used-tickets', JSON.stringify(newUsedTickets), true);
+          await window.storage.set('sobriety-pending-gifts', newGifts.toString(), true);
+          if (newLastReward !== null) {
+            await window.storage.set('sobriety-last-reward', newLastReward.toString(), true);
+          }
+        } catch (error) {
+          console.error('Error saving data:', error);
+        }
+      };
+
+      const addTicket = async () => {
+        const newTickets = tickets + 1;
+        const currentWeek = getCurrentWeek();
+        setTickets(newTickets);
+        setLastRewardWeek(currentWeek);
+        setShowReward(true);
+        await saveData(streak, checkedDays, totalDays, newTickets, usedTickets, currentWeek);
+      };
+
+      const useTicket = async (dayIndex) => {
+        if (usedTickets.length >= 1) {
+          alert('⚠️ Você já usou um ticket esta semana! Apenas 1 ticket por semana pode ser usado. 🐻');
+          return;
+        }
+        
+        if (tickets > 0 && !usedTickets.includes(dayIndex) && !checkedDays.includes(dayIndex)) {
+          const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+          setTicketQuote(randomQuote);
+          setShowTicketMessage(true);
+          
+          const newTickets = tickets - 1;
+          const newUsedTickets = [...usedTickets, dayIndex];
+          setTickets(newTickets);
+          setUsedTickets(newUsedTickets);
+          await saveData(streak, checkedDays, totalDays, newTickets, newUsedTickets);
+          
+          setTimeout(() => {
+            setShowTicketMessage(false);
+          }, 4000);
+        }
+      };
+
+      const redeemGift = async () => {
+        if (tickets >= 5) {
+          const newTickets = tickets - 5;
+          const newGifts = pendingGifts + 1;
+          setTickets(newTickets);
+          setPendingGifts(newGifts);
+          await saveData(streak, checkedDays, totalDays, newTickets, usedTickets, lastRewardWeek, newGifts);
+          setShowGiftOption(false);
+        }
+      };
+
+      const markGiftReceived = async () => {
+        if (pendingGifts > 0) {
+          const newGifts = pendingGifts - 1;
+          setPendingGifts(newGifts);
+          await saveData(streak, checkedDays, totalDays, tickets, usedTickets, lastRewardWeek, newGifts);
+        }
+      };
+
+      const toggleDay = async (dayIndex) => {
+        const newCheckedDays = [...checkedDays];
+        const isChecked = newCheckedDays.includes(dayIndex);
+        
+        if (isChecked) {
+          newCheckedDays.splice(newCheckedDays.indexOf(dayIndex), 1);
+        } else {
+          newCheckedDays.push(dayIndex);
+        }
+        
+        newCheckedDays.sort((a, b) => a - b);
+        const newStreak = newCheckedDays.length;
+        const newTotal = isChecked ? totalDays - 1 : totalDays + 1;
+        
+        setCheckedDays(newCheckedDays);
+        setStreak(newStreak);
+        setTotalDays(newTotal);
+        
+        await saveData(newStreak, newCheckedDays, newTotal);
+        
+        if (newStreak === 6) {
+          setShowReward(true);
+        }
+      };
+
+      const resetWeek = async () => {
+        setCheckedDays([]);
+        setStreak(0);
+        setShowReward(false);
+        setUsedTickets([]);
+        await saveData(0, [], totalDays, tickets, [], lastRewardWeek, pendingGifts);
+        setShowSettings(false);
+      };
+
+      const resetTotal = async () => {
+        setTotalDays(0);
+        await saveData(streak, checkedDays, 0, tickets, usedTickets, lastRewardWeek, pendingGifts);
+        setShowSettings(false);
+      };
+
+      const resetAll = async () => {
+        setCheckedDays([]);
+        setStreak(0);
+        setTotalDays(0);
+        setShowReward(false);
+        setTickets(1);
+        setUsedTickets([]);
+        setLastRewardWeek(null);
+        setPendingGifts(0);
+        await saveData(0, [], 0, 1, [], null, 0);
+        setShowSettings(false);
+      };
+
+      const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+      if (loading) {
+        return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center" },
+          React.createElement('div', { className: "text-purple-600 text-xl" }, 'Carregando...')
+        );
+      }
+
+      if (showReward) {
+        return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-yellow-50 via-pink-50 to-purple-50 flex items-center justify-center p-6" },
+          React.createElement('div', { className: "max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center" },
+            React.createElement('div', { className: "mb-6" },
+              React.createElement('div', { className: "text-8xl animate-bounce" }, '🐻')
+            ),
+            React.createElement('h1', { className: "text-4xl font-bold text-gray-800 mb-4" }, '🎉 Parabéns! 🎉'),
+            React.createElement('p', { className: "text-2xl text-purple-600 font-semibold mb-6" }, '6 Dias Sem Álcool!'),
+            React.createElement('p', { className: "text-gray-600 mb-4 text-lg" }, 
+              'Você completou o desafio! Estamos muito orgulhosos de você. Esta é uma grande conquista! 💜'
+            ),
+            React.createElement('div', { className: "bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 mb-6" },
+              React.createElement('div', { className: "text-6xl mb-3" }, '🎟️'),
+              React.createElement('p', { className: "text-yellow-800 font-bold text-lg mb-2" }, '+1 Ticket Ganho!'),
+              React.createElement('p', { className: "text-yellow-700 text-sm" }, 
+                'Use para aproveitar 2-3 copos com moderação em qualquer dia da semana'
+              )
+            ),
+            React.createElement('div', { className: "bg-purple-50 rounded-xl p-4 mb-6" },
+              React.createElement('p', { className: "text-purple-700 font-medium" }, '🐻 Ursinho está orgulhoso de você!')
+            ),
+            React.createElement('button', {
+              onClick: resetWeek,
+              className: "bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
+            }, 'Começar Nova Semana')
+          )
+        );
+      }
+
+      return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6" },
+        React.createElement('div', { className: "max-w-2xl mx-auto" },
+          React.createElement('div', { className: "bg-white rounded-3xl shadow-xl p-8 mb-6" },
+            React.createElement('div', { className: "flex items-center justify-between mb-6" },
+              React.createElement('div', { className: "flex items-center flex-1 justify-center" },
+                React.createElement(Heart, { className: "w-8 h-8 text-pink-500 mr-3" }),
+                React.createElement('h1', { className: "text-3xl font-bold text-gray-800" }, 'Renascer')
+              ),
+              React.createElement('button', {
+                onClick: () => setShowSettings(true),
+                className: "p-2 hover:bg-gray-100 rounded-full transition-colors"
+              }, React.createElement(Settings, { className: "w-6 h-6 text-gray-600" }))
+            ),
+            
+            React.createElement('div', { className: "text-center mb-8" },
+              React.createElement('div', { className: "inline-block bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl px-8 py-6" },
+                React.createElement('div', { className: "relative w-32 h-32 mx-auto mb-4" },
+                  React.createElement('div', { className: "absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-8 text-4xl animate-bounce" }, '🐻'),
+                  React.createElement('svg', { viewBox: "0 0 100 100", className: "w-full h-full" },
+                    React.createElement('path', {
+                      d: "M50,90 C50,90 10,65 10,40 C10,25 20,15 32.5,15 C40,15 45,20 50,27.5 C55,20 60,15 67.5,15 C80,15 90,25 90,40 C90,65 50,90 50,90 Z",
+                      fill: "#f3e8ff",
+                      stroke: "#a855f7",
+                      strokeWidth: "2"
+                    }),
+                    React.createElement('defs', null,
+                      React.createElement('clipPath', { id: "heartClip" },
+                        React.createElement('rect', {
+                          x: "0",
+                          y: 100 - (streak / 6) * 100,
+                          width: "100",
+                          height: (streak / 6) * 100
+                        })
+                      )
+                    ),
+                    React.createElement('path', {
+                      d: "M50,90 C50,90 10,65 10,40 C10,25 20,15 32.5,15 C40,15 45,20 50,27.5 C55,20 60,15 67.5,15 C80,15 90,25 90,40 C90,65 50,90 50,90 Z",
+                      fill: "url(#heartGradient)",
+                      clipPath: "url(#heartClip)",
+                      className: "transition-all duration-500"
+                    }),
+                    React.createElement('defs', null,
+                      React.createElement('linearGradient', { id: "heartGradient", x1: "0%", y1: "100%", x2: "0%", y2: "0%" },
+                        React.createElement('stop', { offset: "0%", stopColor: "#ec4899" }),
+                        React.createElement('stop', { offset: "100%", stopColor: "#f43f5e" })
+                      )
+                    )
+                  )
+                ),
+                React.createElement('div', { className: "text-4xl font-bold text-purple-600 mb-2" }, `${streak}/6`),
+                React.createElement('div', { className: "text-gray-600 font-medium" }, 'Dias Esta Semana')
+              )
+            ),
+
+            React.createElement('div', { className: "bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-6 mb-8" },
+              React.createElement('div', { className: "flex items-center justify-center gap-4" },
+                React.createElement('div', { className: "text-5xl" }, '🎟️'),
+                React.createElement('div', null,
+                  React.createElement('div', { className: "text-sm text-yellow-700 font-medium" }, 'Tickets Disponíveis'),
+                  React.createElement('div', { className: "text-3xl font-bold text-yellow-600" }, tickets)
+                )
+              ),
+              React.createElement('p', { className: "text-xs text-yellow-700 mt-3 text-center" },
+                'Ganhe 1 ticket a cada 6 dias sem álcool! 🐻',
+                React.createElement('br'),
+                'Use 1 ticket por semana para aproveitar 2-3 copos'
+              ),
+              usedTickets.length > 0 && React.createElement('div', { className: "mt-3 bg-yellow-100 rounded-lg p-2 text-center" },
+                React.createElement('p', { className: "text-xs text-yellow-800" }, `✓ Ticket usado esta semana (${usedTickets.length}/1)`)
+              ),
+              tickets >= 5 && React.createElement('button', {
+                onClick: () => setShowGiftOption(true),
+                className: "mt-4 w-full bg-gradient-to-r from-pink-400 to-purple-400 text-white py-3 rounded-xl font-semibold hover:from-pink-500 hover:to-purple-500 transition-all shadow-lg flex items-center justify-center gap-2 animate-pulse"
+              },
+                React.createElement(Gift, { className: "w-5 h-5" }),
+                'Trocar 5 Tickets por Presente! 🎁'
+              )
+            ),
+
+            pendingGifts > 0 && React.createElement('div', { className: "bg-pink-50 border-2 border-pink-300 rounded-2xl p-6 mb-8" },
+              React.createElement('div', { className: "flex items-center justify-between" },
+                React.createElement('div', { className: "flex items-center gap-4" },
+                  React.createElement('div', { className: "text-5xl animate-bounce" }, '🎁'),
+                  React.createElement('div', null,
+                    React.createElement('div', { className: "text-sm text-pink-700 font-medium" }, 'Presentes Pendentes'),
+                    React.createElement('div', { className: "text-3xl font-bold text-pink-600" }, pendingGifts)
+                  )
+                ),
+                React.createElement('button', {
+                  onClick: markGiftReceived,
+                  className: "bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-600 transition-all shadow-lg"
+                }, 'Presente Recebido! ✓')
+              ),
+              React.createElement('p', { className: "text-xs text-pink-700 mt-3 text-center" }, 'Pergunte ao seu amor qual é a surpresa! 💝🐻')
+            ),
+
+            React.createElement('div', { className: "mb-8" },
+              React.createElement('div', { className: "flex justify-between items-center mb-4" },
+                React.createElement('h2', { className: "text-xl font-semibold text-gray-700 flex items-center" },
+                  React.createElement(Calendar, { className: "w-5 h-5 mr-2" }),
+                  'Esta Semana'
+                )
+              ),
+              React.createElement('div', { className: "grid grid-cols-7 gap-3" },
+                days.map((day, index) => {
+                  const isChecked = checkedDays.includes(index);
+                  const isTicketUsed = usedTickets.includes(index);
+                  return React.createElement('div', { key: index, className: "text-center" },
+                    React.createElement('div', { className: "text-sm font-medium text-gray-500 mb-2" }, day),
+                    React.createElement('button', {
+                      onClick: () => toggleDay(index),
+                      className: `w-full aspect-square rounded-xl transition-all duration-500 flex items-center justify-center text-2xl transform hover:scale-110 ${
+                        isChecked
+                          ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg scale-105 animate-bounce'
+                          : isTicketUsed
+                          ? 'bg-gradient-to-br from-yellow-300 to-yellow-400 text-white shadow-lg'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-400'
+                      }`
+                    }, isChecked ? '✓' : isTicketUsed ? '🎟️' : '○'),
+                    !isChecked && !isTicketUsed && React.createElement('button', {
+                      onClick: () => useTicket(index),
+                      disabled: tickets === 0,
+                      className: `mt-2 text-xs px-2 py-1 rounded-lg transition-all ${
+                        tickets > 0
+                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`
+                    }, 'Usar 🎟️')
+                  );
+                })
+              )
+            ),
+
+            React.createElement('div', { className: "bg-purple-50 rounded-2xl p-6 mb-6" },
+              React.createElement('div', { className: "flex items-center justify-between" },
+                React.createElement('div', { className: "flex items-center" },
+                  React.createElement(Sparkles, { className: "w-6 h-6 text-purple-500 mr-3" }),
+                  React.createElement('div', null,
+                    React.createElement('div', { className: "text-sm text-gray-600" }, 'Total de Dias Sem Álcool'),
+                    React.createElement('div', { className: "text-2xl font-bold text-purple-600" }, totalDays)
+                  )
+                ),
+                streak < 6 && React.createElement('div', { className: "text-right" },
+                  React.createElement('div', { className: "text-sm text-gray-600" }, 'Dias Até a Recompensa'),
+                  React.createElement('div', { className: "text-2xl font-bold text-pink-500" }, 6 - streak)
+                )
+              )
+            ),
+
+            streak > 0 && React.createElement('div', { className: "bg-green-50 border-2 border-green-200 rounded-2xl p-4 text-center animate-pulse" },
+              React.createElement('p', { className: "text-green-700 font-medium" },
+                streak === 1 ? "Ótimo começo! Continue assim! 💪" :
+                streak === 2 ? "Dois dias forte! Você consegue! 🌟" :
+                streak === 3 ? "Metade do caminho! Progresso incrível! 🎯" :
+                streak === 4 ? "Quatro dias! Você está indo maravilhosamente! ✨" :
+                streak === 5 ? "Cinco dias! Quase lá! 🚀" : ""
+              )
+            ),
+
+            React.createElement('button', {
+              onClick: () => setShowSettings(true),
+              className: "w-full mt-6 bg-gray-100 text-gray-600 py-3 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            }, 'Configurações')
+          ),
+
+          React.createElement('div', { className: "text-center text-gray-500 text-sm" }, 
+            'Este rastreador é compartilhado entre vocês dois 💜'
+          )
+        ),
+
+        showSettings && React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50" },
+          React.createElement('div', { className: "bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full" },
+            React.createElement('div', { className: "flex items-center justify-between mb-6" },
+              React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, 'Configurações'),
+              React.createElement('button', {
+                onClick: () => setShowSettings(false),
+                className: "p-2 hover:bg-gray-100 rounded-full transition-colors"
+              }, React.createElement(X, { className: "w-6 h-6 text-gray-600" }))
+            ),
+            React.createElement('div', { className: "space-y-4" },
+              React.createElement('div', { className: "bg-purple-50 rounded-2xl p-
